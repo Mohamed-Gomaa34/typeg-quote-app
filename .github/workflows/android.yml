@@ -1,4 +1,5 @@
 name: Build Android app
+# Builds a signed APK and publishes it as a GitHub release.
 on:
   push:
     branches: [main]
