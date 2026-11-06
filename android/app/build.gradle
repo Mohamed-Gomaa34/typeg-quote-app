@@ -23,6 +23,9 @@ android {
                 storePassword System.getenv("KEYSTORE_PW")
                 keyAlias "typeg"
                 keyPassword System.getenv("KEYSTORE_PW")
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
             }
         }
     }
