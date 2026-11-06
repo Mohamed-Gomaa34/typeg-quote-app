@@ -29,16 +29,16 @@ jobs:
           KEYSTORE_PATH: '${{ runner.temp }}/typeg.jks'
           KEYSTORE_PW: '${{ secrets.ANDROID_KEYSTORE_PW }}'
           VERSION_CODE: '${{ github.run_number }}'
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
       - name: Verify APK
         run: |
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
-          $BT/apksigner verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
-          $BT/aapt2 dump badging android/app/build/outputs/apk/release/app-release.apk | head -5
+          $BT/apksigner verify --verbose --print-certs android/app/build/outputs/apk/debug/app-debug.apk
+          $BT/aapt2 dump badging android/app/build/outputs/apk/debug/app-debug.apk | head -5
       - name: Publish release
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk TypeG-Quotes.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk TypeG-Quotes.apk
           gh release create "v1.0.${{ github.run_number }}" TypeG-Quotes.apk \
             --title "Type-G عروض — نسخة ${{ github.run_number }}" \
             --notes "نزّل الملف TypeG-Quotes.apk من تحت وثبّته على الموبايل." --latest

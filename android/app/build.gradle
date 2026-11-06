@@ -30,6 +30,9 @@ android {
         }
     }
     buildTypes {
+        debug {
+            signingConfig System.getenv("KEYSTORE_PATH") ? signingConfigs.release : signingConfigs.debug
+        }
         release {
             signingConfig System.getenv("KEYSTORE_PATH") ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
