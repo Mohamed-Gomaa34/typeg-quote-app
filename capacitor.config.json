@@ -1,0 +1,10 @@
+{
+  "appId": "com.typegsmart.quotes",
+  "appName": "Type-G عروض",
+  "webDir": "www",
+  "server": {
+    "url": "https://mohamed-gomaa34.github.io/typeg-quote-app/",
+    "errorPath": "offline.html"
+  },
+  "android": { "allowMixedContent": false }
+}

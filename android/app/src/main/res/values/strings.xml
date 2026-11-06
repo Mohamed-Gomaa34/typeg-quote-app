@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Type-G عروض</string>
+    <string name="title_activity_main">Type-G عروض</string>
+    <string name="package_name">com.typegsmart.quotes</string>
+    <string name="custom_url_scheme">com.typegsmart.quotes</string>
+</resources>

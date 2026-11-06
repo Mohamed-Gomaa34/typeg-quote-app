@@ -1,0 +1,38 @@
+name: Build Android app
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', 'capacitor.config.json', 'package.json', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npx cap sync android
+      - name: Signing key
+        env: { KS: '${{ secrets.ANDROID_KEYSTORE_B64 }}' }
+        run: |
+          if [ -z "$KS" ]; then echo "::error::Add the ANDROID_KEYSTORE_B64 and ANDROID_KEYSTORE_PW secrets first"; exit 1; fi
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/typeg.jks"
+      - name: Build APK
+        working-directory: android
+        env:
+          KEYSTORE_PATH: '${{ runner.temp }}/typeg.jks'
+          KEYSTORE_PW: '${{ secrets.ANDROID_KEYSTORE_PW }}'
+          VERSION_CODE: '${{ github.run_number }}'
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Publish release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk TypeG-Quotes.apk
+          gh release create "v1.0.${{ github.run_number }}" TypeG-Quotes.apk \
+            --title "Type-G عروض — نسخة ${{ github.run_number }}" \
+            --notes "نزّل الملف TypeG-Quotes.apk من تحت وثبّته على الموبايل." --latest

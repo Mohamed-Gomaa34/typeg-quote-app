@@ -118,7 +118,7 @@
       <label>التليفون</label><input data-k="client.phone" type="tel" inputmode="tel" placeholder="01xxxxxxxxx" dir="ltr">
       <label>العنوان</label><input data-k="client.address" placeholder="المنطقة، الشارع، رقم العمارة">
       <label>اللوكيشن</label><div class="row"><input class="grow" data-k="client.mapUrl" placeholder="رابط خرائط جوجل" dir="ltr"><button class="btn sm alt" id="geo">موقعي الحالي</button></div>
-      ${j.client.mapUrl ? `<a href="${esc(j.client.mapUrl)}" target="_blank" class="muted">فتح على الخريطة</a>` : ''}
+      ${j.client.mapUrl ? `<a href="${esc(j.client.mapUrl)}" target="_blank" rel="noopener" class="muted" data-ext>فتح على الخريطة</a>` : ''}
       <div class="grid2"><div><label>المصدر</label><select data-k="client.source">${SOURCES.map(s => `<option>${s}</option>`).join('')}</select></div>
       <div><label>مين رشحه</label><input data-k="client.referrer"></div></div>
       <label>ملاحظات (ليك بس)</label><textarea data-k="client.notes"></textarea></div>
@@ -269,6 +269,7 @@
     j.quoteDate = Date.now();
   }
   async function shareOrDownload(blob, name, text) {
+    if (Native.isNative) return Native.shareFile(blob, name, text);
     const file = new File([blob], name, { type: 'application/pdf' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], text }); return true; } catch (e) { if (e.name === 'AbortError') return false; }
@@ -302,15 +303,15 @@
       } catch (err) { toast('حصلت مشكلة في عمل الملف'); console.error(err); } finally { busy(e.target, false); }
     };
     $('#prev').onclick = async e => { busy(e.target, true); try { ensureQuoteNo(j); saveJob(j);
-      const blob = await QuotePDF.client(j, q, settings, await photosFor(j)); window.open(URL.createObjectURL(blob)); } finally { busy(e.target, false); } };
+      const blob = await QuotePDF.client(j, q, settings, await photosFor(j)); if (Native.isNative) await Native.shareFile(blob, `معاينة ${j.quoteNo}.pdf`); else window.open(URL.createObjectURL(blob)); } finally { busy(e.target, false); } };
     $('#intl').onclick = async e => { busy(e.target, true); try { ensureQuoteNo(j); saveJob(j);
       const blob = await QuotePDF.internal(j, q, settings); await shareOrDownload(blob, `داخلي ${j.quoteNo}.pdf`); } finally { busy(e.target, false); } };
-    $('#wa').onclick = () => { if (!j.client.phone) return toast('مفيش رقم تليفون للعميل'); window.open(`https://wa.me/${waNumber(j.client.phone)}?text=${encodeURIComponent(msg)}`); };
+    $('#wa').onclick = () => { if (!j.client.phone) return toast('مفيش رقم تليفون للعميل'); Native.openUrl(`https://wa.me/${waNumber(j.client.phone)}?text=${encodeURIComponent(msg)}`); };
     $('#bom').onclick = () => {
       const lines = q.lines.filter(l => l.kind === 'mat').map(l => `• ${l.name}: ${l.qty} ${l.unit}`).join('\n');
       const locs = j.locations.map((l, i) => `${i + 1}. ${l.name || '-'} — ${l.kind === 'relocate' ? 'نقل' : (item(l.camId)?.name || '')}${l.height ? ' · ارتفاع ' + l.height + 'م' : ''}${l.ladder ? ' · سلم' : ''}${l.mounting ? ' · ' + l.mounting : ''}`).join('\n');
       const txt = `قائمة خامات — ${j.client.name}\n${j.client.address || ''}\n\n${lines}\n\nكابل: ${q.cable.withReserve} م (${q.cable.boxes} كرتونة)\n\nالأماكن:\n${locs}`;
-      if (navigator.share) navigator.share({ text: txt }).catch(() => {}); else navigator.clipboard.writeText(txt).then(() => toast('اتنسخت'));
+      if (Native.isNative) Native.shareText(txt); else if (navigator.share) navigator.share({ text: txt }).catch(() => {}); else navigator.clipboard.writeText(txt).then(() => toast('اتنسخت'));
     };
     pane.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
       if (b.dataset.st === 'followup') { const d = prompt('تتابع معاه بعد كام يوم؟ (0 = من غير تذكير)', '2'); if (d === null) return; j.followAt = Number(d) > 0 ? Date.now() + Number(d) * DAY : null; }
@@ -401,7 +402,8 @@
         const blob = new Blob([text], { type: 'application/octet-stream' });
         const name = 'typeg-backup.tgbak';
         const file = new File([blob], name, { type: 'application/octet-stream' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] }).catch(() => {});
+        if (Native.isNative) await Native.shareFile(blob, name);
+        else if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] }).catch(() => {});
         else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); }
         settings.lastBackup = Date.now(); saveSettings(); toast(`النسخة جاهزة (${(blob.size / 1048576).toFixed(1)} ميجا)`); settingsView();
       } finally { e.target.disabled = false; }
@@ -454,9 +456,18 @@
       } catch { pw = null; wrong = true; if (!interactive) return 'locked'; }
     }
   }
+  async function refreshReminders() {
+    const jobs = await Store.jobs();
+    Native.scheduleFollowups(jobs.filter(j => (j.status === 'sent' && j.sentAt) || (j.status === 'followup' && j.followAt)).map(j => ({
+      at: j.status === 'sent' ? j.sentAt + settings.followupDays * DAY : j.followAt,
+      text: `${j.client.name || 'عميل'} — ${j.status === 'sent' ? 'العرض اتبعت من ' + settings.followupDays + ' يوم ومفيش رد' : 'ميعاد المتابعة'}` })));
+  }
+  window.addEventListener('hashchange', () => { clearTimeout(window._rr); window._rr = setTimeout(refreshReminders, 1500); });
+  document.addEventListener('click', e => { const l = e.target.closest('a[data-ext]'); if (l && Native.isNative) { e.preventDefault(); Native.openUrl(l.href); } });
+  await Native.unlock();
   const hadPrices = catalog.length > 0;
   const ps = await syncPrices(true);
-  route();
+  route(); refreshReminders();
   if (ps === 'updated') toast(hadPrices ? 'الأسعار اتحدثت' : 'الأسعار اتفتحت');
   else if (ps === 'offline' && !hadPrices) toast('مفيش نت — الأسعار هتتحمل أول ما النت يرجع');
 })();

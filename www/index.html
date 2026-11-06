@@ -15,11 +15,13 @@
   <a href="#/settings" data-nav="settings">الإعدادات</a>
 </nav>
 <div id="toast"></div>
+<script src="native.js"></script>
 <script src="seed.js"></script>
 <script src="calc.js"></script>
 <script src="store.js"></script>
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="pdf.js"></script>
 <script src="app.js"></script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 </body>
 </html>
