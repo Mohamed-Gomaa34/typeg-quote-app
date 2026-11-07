@@ -26,6 +26,8 @@ import com.getcapacitor.annotation.PermissionCallback;
 @CapacitorPlugin(name = "ContactPicker", permissions = @Permission(alias = "contacts", strings = { Manifest.permission.READ_CONTACTS }))
 public class ContactPickerPlugin extends Plugin {
 
+    private JSObject picked = new JSObject();
+
     @PluginMethod
     public void pick(PluginCall call) {
         Intent i = new Intent(Intent.ACTION_PICK, CommonDataKinds.Phone.CONTENT_URI);
@@ -52,7 +54,7 @@ public class ContactPickerPlugin extends Plugin {
             call.reject("read failed: " + e.getMessage());
             return;
         }
-        call.getData().put("_picked", out);
+        picked = out;
         if (getPermissionState("contacts") == PermissionState.GRANTED) {
             finish(call);
         } else {
@@ -66,7 +68,7 @@ public class ContactPickerPlugin extends Plugin {
     }
 
     private void finish(PluginCall call) {
-        JSObject out = call.getData().getJSObject("_picked", new JSObject());
+        JSObject out = picked;
         String id = out.getString("contactId");
         if (id != null && getPermissionState("contacts") == PermissionState.GRANTED) {
             out.put("address", one(id, CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE, CommonDataKinds.StructuredPostal.FORMATTED_ADDRESS));
