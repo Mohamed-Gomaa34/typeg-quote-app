@@ -58,5 +58,27 @@
     } catch (e) { console.warn('notifications', e); }
   }
 
-  window.Native = { isNative, shareFile, shareText, openUrl, unlock, scheduleFollowups };
+  // Pick a client from the phone's contacts. Returns {name, phone, address?, email?, company?, note?} or null.
+  // 'old-app' means this installed APK predates the picker and needs updating.
+  async function pickContact() {
+    if (isNative) {
+      try { return await call('ContactPicker', 'pick'); }
+      catch (e) {
+        const m = String(e && (e.message || e.code || e));
+        if (/cancel/i.test(m)) return null;
+        if (/not implemented|UNIMPLEMENTED|not available/i.test(m)) return 'old-app';
+        throw e;
+      }
+    }
+    if (navigator.contacts && navigator.contacts.select) {
+      const r = await navigator.contacts.select(['name', 'tel', 'email', 'address'], { multiple: false });
+      if (!r || !r[0]) return null;
+      const a = r[0].address && r[0].address[0];
+      return { name: (r[0].name || [])[0], phone: (r[0].tel || [])[0], email: (r[0].email || [])[0],
+        address: a ? [a.addressLine && a.addressLine.join(' '), a.city].filter(Boolean).join('، ') : null };
+    }
+    return 'unsupported';
+  }
+
+  window.Native = { isNative, shareFile, shareText, openUrl, unlock, scheduleFollowups, pickContact };
 })();

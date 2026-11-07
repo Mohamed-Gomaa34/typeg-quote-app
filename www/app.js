@@ -112,7 +112,8 @@
   }
 
   function clientTab(j, pane) {
-    pane.innerHTML = `<div class="card"><h3>بيانات العميل</h3>
+    pane.innerHTML = `<div class="card"><div class="row" style="margin-bottom:6px"><h3 class="grow" style="margin:0">بيانات العميل</h3>
+      <button class="btn sm alt" id="pickc">📇 من جهات الاتصال</button></div>
       <div class="grid2"><div><label>اللقب</label><select data-k="client.title">${['الأستاذ', 'المهندس', 'الدكتور', 'الأستاذة', 'المهندسة', 'الدكتورة', 'السيد', 'السيدة'].map(t => `<option>${t}</option>`).join('')}</select></div>
       <div><label>الاسم</label><input data-k="client.name" placeholder="اسم العميل"></div></div>
       <label>التليفون</label><input data-k="client.phone" type="tel" inputmode="tel" placeholder="01xxxxxxxxx" dir="ltr">
@@ -127,6 +128,14 @@
       <a class="btn block" href="#/job/${j.id}/survey">التالي: المعاينة ›</a>
       <div style="text-align:center;margin-top:18px"><button class="btn ghost" id="del">مسح الطلب</button></div>`;
     bind(pane, j, () => saveJob(j));
+    $('#pickc').onclick = async () => {
+      let r;
+      try { r = await Native.pickContact(); } catch (e) { toast('مقدرتش أفتح جهات الاتصال'); return; }
+      if (r === 'old-app') { alert('الخاصية دي محتاجة النسخة الجديدة من التطبيق. نزّلها من نفس اللينك وثبّتها فوق القديمة — بياناتك مش هتتمسح.'); return; }
+      if (r === 'unsupported') { toast('جهات الاتصال مش متاحة هنا'); return; }
+      if (!r) return;
+      fillFromContact(j, r); saveJob(j); clientTab(j, pane); toast('اتملت من جهات الاتصال');
+    };
     $('#st').onchange = e => { setStatus(j, e.target.value); saveJob(j); toast('الحالة اتغيرت'); };
     $('#geo').onclick = () => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => {
       j.client.mapUrl = `https://maps.google.com/?q=${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`; saveJob(j); clientTab(j, pane); toast('الموقع اتسجل');
@@ -136,6 +145,19 @@
       for (const l of j.locations) for (const pid of l.photos || []) await Store.delPhoto(pid);
       await Store.delJob(j.id); location.hash = '#/';
     };
+  }
+
+  // Fill client fields from a phone contact. Only fills empty fields, except name/phone which come from the pick.
+  function fillFromContact(j, r) {
+    const c = j.client;
+    let name = (r.name || '').trim();
+    const titles = [[/^(م\.|م\/|م\s|مهندس[ةه]?\s|eng\.?\s)/i, 'المهندس'], [/^(د\.|د\/|د\s|دكتور[ةه]?\s|dr\.?\s)/i, 'الدكتور'], [/^(أ\.|ا\.|أ\/|أستاذ[ةه]?\s|استاذ[ةه]?\s)/i, 'الأستاذ']];
+    for (const [re, t] of titles) if (re.test(name)) { name = name.replace(re, '').trim(); c.title = /[ةه]\s/.test((r.name.match(re) || [''])[0]) ? t + 'ة' : t; break; }
+    if (name) c.name = name;
+    if (r.phone) { let p = r.phone.replace(/[^\d+]/g, ''); if (p.startsWith('+20')) p = '0' + p.slice(3); else if (p.startsWith('0020')) p = '0' + p.slice(4); c.phone = p; }
+    if (r.address && !c.address) c.address = r.address.replace(/\s*\n\s*/g, '، ');
+    const extra = [r.company && 'الشركة: ' + r.company, r.email && 'الإيميل: ' + r.email, r.note && 'ملاحظة من جهات الاتصال: ' + r.note].filter(Boolean);
+    if (extra.length) { const add = extra.filter(x => !(c.notes || '').includes(x)); if (add.length) c.notes = [c.notes, ...add].filter(Boolean).join('\n'); }
   }
 
   const opts = (cat, sel, filter) => `<option value="">— اختار —</option>` + catalog.filter(c => c.cat === cat && (!filter || filter(c)))
