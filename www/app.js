@@ -181,7 +181,8 @@
         <div class="grid2"><div><label>النوع</label><select data-k="kind"><option value="new">كاميرا جديدة</option><option value="relocate">نقل كاميرا قائمة</option></select></div>
         <div><label>داخلي / خارجي</label><select data-k="place"><option value="out">خارجي</option><option value="in">داخلي</option></select></div></div>
         ${l.kind !== 'relocate' ? `<label>الكاميرا</label><select data-k="camId">${opts('cam', l.camId, x => !x.specs.place || x.specs.place === (l.place || 'out'))}</select>
-        <label>الحامل</label><select data-k="mountId">${opts('mount', l.mountId)}</select>` : ''}
+        <label>طريقة التثبيت (بواط حرف L أو حامل)</label><select data-k="mountId">${opts('mount', l.mountId)}</select>
+        ${l.mountId && !/حرف L/.test(item(l.mountId)?.name || '') ? `<label>البواطة</label><select data-k="boxId">${opts('acc', l.boxId, x => /بواط/.test(x.name))}</select>` : ''}` : ''}
         <div class="grid2"><div><label>طول الكابل (متر)</label><input type="number" inputmode="decimal" data-k="cableM" dir="ltr"></div>
         <div><label>الارتفاع (متر)</label><input type="number" inputmode="decimal" data-k="height" dir="ltr"></div></div>
         <label><input type="checkbox" data-k="ladder">يتطلب سلمًا أو سقالة</label>
@@ -190,7 +191,8 @@
         <label>ملاحظات</label><input data-k="notes">
         <div class="photos"></div>`;
       box.appendChild(c);
-      bind(c, l, el => { saveJob(j); if (['kind', 'place'].includes(el.dataset.k)) surveyTab(j, pane); });
+      bind(c, l, el => { saveJob(j); if (el.dataset.k === 'mountId' && /حرف L/.test(item(l.mountId)?.name || '')) l.boxId = '';
+        if (['kind', 'place', 'mountId'].includes(el.dataset.k)) surveyTab(j, pane); });
       c.querySelector('[data-act=rm]').onclick = async () => {
         if (!confirm('هل تريد حذف هذه النقطة؟')) return;
         for (const pid of l.photos || []) await Store.delPhoto(pid);

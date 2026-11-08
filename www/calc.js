@@ -32,6 +32,7 @@
     };
     for (const [id, q] of Object.entries(group('camId'))) { const it = byId(id); if (it) add(it.brand + ' ' + it.name, q, it.cost); }
     for (const [id, q] of Object.entries(group('mountId'))) { const it = byId(id); if (it) add(it.name, q, it.cost); }
+    for (const [id, q] of Object.entries(group('boxId'))) { const it = byId(id); if (it) add(it.name, q, it.cost); }
 
     // Cable
     const measured = locs.reduce((s, l) => s + (Number(l.cableM) || 0), 0);
