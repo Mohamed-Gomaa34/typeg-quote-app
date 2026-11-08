@@ -45,7 +45,7 @@
       if (o.cableLump) {
         const lump = Number(o.lumpPrice) || 0;
         lines.push({ name: 'كابلات وخراطيم وإكسسوارات — مقطوعية', qty: 1, unit: 'مقطوعية', cost: Number(o.lumpCost) || 0, sell: lump, kind: 'mat' });
-        if (!lump) warnings.push('المقطوعية مكتوبة من غير سعر.');
+        if (!lump) warnings.push('لم يتم إدخال سعر المقطوعية.');
       } else if (cableItem) {
         add(cableItem.name.replace(/\s*\(بالمتر\)|\s*كرتونة\s*\d+م/g, ''), cableM, perM(cableItem), 'متر');
       }
@@ -76,16 +76,16 @@
     const camCount = locs.length;
     const camItems = locs.map(l => byId(l.camId)).filter(Boolean);
     if (nvr && nvr.specs.channels && camCount > nvr.specs.channels)
-      warnings.push(`عدد الكاميرات (${camCount}) أكبر من قنوات جهاز التسجيل (${nvr.specs.channels}).`);
+      warnings.push(`عدد الكاميرات (${camCount}) يتجاوز عدد قنوات جهاز التسجيل (${nvr.specs.channels}).`);
     if (sw && sw.specs.ports && camCount > sw.specs.ports - 1)
-      warnings.push(`السويتش ${sw.specs.ports} بورت — محتاج بورت للجهاز، والكاميرات ${camCount}.`);
+      warnings.push(`منافذ السويتش (${sw.specs.ports}) لا تكفي: مطلوب ${camCount} منفذ للكاميرات بالإضافة إلى منفذ لجهاز التسجيل.`);
     if (sw && sw.specs.poeW > 0) {
       const watts = camItems.reduce((s, c) => s + (c.specs.watt || 7), 0);
-      if (watts > sw.specs.poeW) warnings.push(`استهلاك الكاميرات تقريبًا ${watts} وات أكبر من قدرة PoE للسويتش (${sw.specs.poeW} وات).`);
+      if (watts > sw.specs.poeW) warnings.push(`الاستهلاك التقديري للكاميرات (${watts} وات) يتجاوز قدرة PoE للسويتش (${sw.specs.poeW} وات).`);
     }
-    if (camItems.some(c => c.brand === 'Hikvision') && !nvr) warnings.push('فيه كاميرات Hikvision من غير جهاز تسجيل.');
-    if (nvr && !hdd) warnings.push('جهاز التسجيل من غير هارد.');
-    locs.forEach((l, i) => { if (l.kind !== 'relocate' && !l.camId) warnings.push(`المكان ${i + 1} (${l.name || 'بدون اسم'}) مفيهوش نوع كاميرا.`); });
+    if (camItems.some(c => c.brand === 'Hikvision') && !nvr) warnings.push('توجد كاميرات Hikvision بدون جهاز تسجيل.');
+    if (nvr && !hdd) warnings.push('لم يتم اختيار وحدة تخزين لجهاز التسجيل.');
+    locs.forEach((l, i) => { if (l.kind !== 'relocate' && !l.camId) warnings.push(`لم يتم اختيار نوع الكاميرا للنقطة ${i + 1} (${l.name || 'بدون اسم'}).`); });
 
     const total = lines.reduce((s, l) => s + l.qty * l.sell, 0);
     const costTotal = lines.reduce((s, l) => s + l.qty * l.cost, 0);

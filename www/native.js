@@ -26,13 +26,13 @@
     for (;;) {
       try {
         await call('BiometricAuthNative', 'internalAuthenticate', {
-          reason: 'افتح تطبيق العروض', androidTitle: 'Type-G عروض', androidSubtitle: 'بصمة أو قفل الموبايل',
+          reason: 'تسجيل الدخول', androidTitle: 'Type-G عروض', androidSubtitle: 'البصمة أو قفل الشاشة',
           cancelTitle: 'إلغاء', allowDeviceCredential: true, androidConfirmationRequired: false });
         return true;
       } catch (e) {
         await new Promise(res => {
           document.body.insertAdjacentHTML('beforeend', `<div id="lockv" style="position:fixed;inset:0;background:#123a6b;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:50;font-family:inherit">
-            <div style="font-size:22px;font-weight:700">Type-G Smart</div><div style="opacity:.85">التطبيق مقفول</div>
+            <div style="font-size:22px;font-weight:700">Type-G Smart</div><div style="opacity:.85">التطبيق مقفل</div>
             <button style="background:#f28a1e;color:#fff;border:0;border-radius:10px;padding:12px 26px;font:inherit;font-weight:700">فتح</button></div>`);
           const v = document.getElementById('lockv'); v.querySelector('button').onclick = () => { v.remove(); res(); };
         });
@@ -52,7 +52,7 @@
       const list = items.map((it, i) => {
         let at = new Date(Math.max(it.at, now + 60e3));
         if (at.getHours() < 9) at.setHours(9, 0, 0, 0); else if (at.getHours() >= 21) { at.setDate(at.getDate() + 1); at.setHours(9, 0, 0, 0); }
-        return { id: 1000 + i, title: 'متابعة عرض', body: it.text, schedule: { at: at.toISOString(), allowWhileIdle: true } };
+        return { id: 1000 + i, title: 'متابعة عرض سعر', body: it.text, schedule: { at: at.toISOString(), allowWhileIdle: true } };
       });
       if (list.length) await call('LocalNotifications', 'schedule', { notifications: list });
     } catch (e) { console.warn('notifications', e); }

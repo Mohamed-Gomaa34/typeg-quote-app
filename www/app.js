@@ -6,12 +6,12 @@
   const DAY = 864e5;
   const app = $('#app');
 
-  const STATUS = { new: 'جديد', survey: 'معاينة', sent: 'عرض اتبعت', followup: 'متابعة', won: 'اتقفل', lost: 'اترفض' };
-  const SOURCES = ['تليفون', 'واتساب', 'فيسبوك', 'معارف', 'أخرى'];
-  const CATS = { cam: 'كاميرات', door: 'أبواب وعين سحرية', nvr: 'أجهزة تسجيل', switch: 'سويتشات', hdd: 'هاردات', cable: 'كابلات', access: 'انتركم وتحكم دخول',
-    power: 'باور وسبليتر', mount: 'حوامل', acc: 'إكسسوارات وخامات', other: 'أخرى' };
-  const SPEC_FIELDS = { cam: [['res', 'الدقة (ميجا)'], ['watt', 'الاستهلاك (وات)']], nvr: [['channels', 'عدد القنوات']],
-    switch: [['ports', 'عدد البورتات'], ['poeW', 'قدرة PoE (وات)']], hdd: [['tb', 'الحجم (تيرا)']] };
+  const STATUS = { new: 'جديد', survey: 'قيد المعاينة', sent: 'تم إرسال العرض', followup: 'قيد المتابعة', won: 'تم التعاقد', lost: 'مرفوض' };
+  const SOURCES = ['اتصال هاتفي', 'واتساب', 'فيسبوك', 'ترشيح', 'أخرى'];
+  const CATS = { cam: 'كاميرات', door: 'الأجراس والعيون السحرية والأقفال', nvr: 'أجهزة التسجيل', switch: 'محولات الشبكة', hdd: 'وحدات التخزين', cable: 'كابلات', access: 'الإنتركم والتحكم في الدخول',
+    power: 'مصادر التغذية والموزعات', mount: 'حوامل', acc: 'الخامات والملحقات', other: 'أخرى' };
+  const SPEC_FIELDS = { cam: [['res', 'الدقة (ميجابكسل)'], ['watt', 'الاستهلاك (وات)']], nvr: [['channels', 'عدد القنوات']],
+    switch: [['ports', 'عدد المنافذ'], ['poeW', 'قدرة PoE (وات)']], hdd: [['tb', 'السعة (تيرابايت)']] };
 
   // ---------- state ----------
   let settings = await Store.get('settings');
@@ -29,7 +29,7 @@
     (j.status === 'followup' && j.followAt && Date.now() >= j.followAt);
   function newJob() {
     return { id: uid(), createdAt: Date.now(), updatedAt: Date.now(), status: 'new', history: [{ s: 'new', t: Date.now() }],
-      client: { name: '', title: 'الأستاذ', phone: '', address: '', mapUrl: '', source: 'تليفون', referrer: '', notes: '' },
+      client: { name: '', title: 'الأستاذ', phone: '', address: '', mapUrl: '', source: 'اتصال هاتفي', referrer: '', notes: '' },
       locations: [], equip: { extras: [] }, extraLabor: [], opts: { showPhotos: false } };
   }
   function setStatus(j, s) { if (j.status === s) return; j.status = s; j.history.push({ s, t: Date.now() }); if (s === 'sent') j.sentAt = Date.now(); }
@@ -54,29 +54,29 @@
     const due = jobs.filter(isDue);
     const shown = filter === 'all' ? jobs : jobs.filter(j => j.status === filter);
     const totalOf = j => { try { return Calc.buildQuote(j, catalog, settings).total; } catch { return 0; } };
-    app.innerHTML = `<header class="top"><h1><span class="dot"></span>Type-G Smart</h1><div class="sub">الطلبات والمعاينات والعروض</div></header><main>
-      ${due.length ? `<div class="card due"><h3>محتاج متابعة النهارده (${due.length})</h3>${due.map(j => `
+    app.innerHTML = `<header class="top"><h1><span class="dot"></span>Type-G Smart</h1><div class="sub">إدارة الطلبات والمعاينات وعروض الأسعار</div></header><main>
+      ${due.length ? `<div class="card due"><h3>متابعات مستحقة اليوم (${due.length})</h3>${due.map(j => `
         <div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)">
-          <a class="grow" href="#/job/${j.id}/quote"><b>${esc(j.client.name || 'بدون اسم')}</b><div class="muted">${j.status === 'sent' ? 'العرض اتبعت من ' + daysSince(j.sentAt) + ' يوم' : 'ميعاد المتابعة جه'}</div></a>
-          <button class="btn sm alt" data-st="followup" data-id="${j.id}">رد</button>
-          <button class="btn sm ok" data-st="won" data-id="${j.id}">وافق</button>
-          <button class="btn sm bad" data-st="lost" data-id="${j.id}">رفض</button></div>`).join('')}</div>` : ''}
+          <a class="grow" href="#/job/${j.id}/quote"><b>${esc(j.client.name || 'بدون اسم')}</b><div class="muted">${j.status === 'sent' ? 'أُرسل العرض منذ ' + daysSince(j.sentAt) + ' يوم' : 'حان موعد المتابعة'}</div></a>
+          <button class="btn sm alt" data-st="followup" data-id="${j.id}">تم الرد</button>
+          <button class="btn sm ok" data-st="won" data-id="${j.id}">تمت الموافقة</button>
+          <button class="btn sm bad" data-st="lost" data-id="${j.id}">مرفوض</button></div>`).join('')}</div>` : ''}
       <div class="chips"><a class="chip ${filter === 'all' ? 'on' : ''}" href="#/">الكل (${jobs.length})</a>
         ${Object.entries(STATUS).map(([k, v]) => `<a class="chip ${filter === k ? 'on' : ''}" href="#/f/${k}">${v} (${jobs.filter(j => j.status === k).length})</a>`).join('')}</div>
       ${shown.length ? shown.map(j => `<a class="card job" href="#/job/${j.id}/${j.locations.length ? 'quote' : 'client'}">
         <div class="row"><span class="name grow">${esc(j.client.name || 'بدون اسم')}</span><span class="badge st-${j.status}">${STATUS[j.status]}</span></div>
         <div class="row muted" style="margin-top:4px"><span class="grow">${esc(j.client.address || '')}</span><span>${j.locations.length} كاميرا · ${fmt(totalOf(j))} ج</span></div></a>`).join('')
-        : `<div class="empty">مفيش طلبات هنا.<br>دوس "طلب جديد" عشان تبدأ.</div>`}
+        : `<div class="empty">لا توجد طلبات.<br>اضغط "طلب جديد" للبدء.</div>`}
       </main><button class="btn orange fab" id="new">+ طلب جديد</button>`;
     $('#new').onclick = async () => { const j = newJob(); await Store.putJob(j); location.hash = `#/job/${j.id}/client`; };
     app.querySelectorAll('[data-st]').forEach(b => b.onclick = async () => {
       const j = await Store.job(b.dataset.id);
       if (b.dataset.st === 'followup') {
-        const d = prompt('العميل رد. تتابع معاه بعد كام يوم؟ (اكتب 0 لو مش محتاج تذكير)', '2');
+        const d = prompt('تم تسجيل رد العميل. موعد المتابعة التالية بعد كم يوم؟ (أدخل 0 لإلغاء التذكير)', '2');
         if (d === null) return;
         j.followAt = Number(d) > 0 ? Date.now() + Number(d) * DAY : null;
       }
-      setStatus(j, b.dataset.st); j.updatedAt = Date.now(); await Store.putJob(j); toast('اتسجل'); route();
+      setStatus(j, b.dataset.st); j.updatedAt = Date.now(); await Store.putJob(j); toast('تم الحفظ'); route();
     });
   }
 
@@ -84,7 +84,7 @@
   async function jobView(id, tab) {
     const j = await Store.job(id);
     if (!j) { location.hash = '#/'; return; }
-    const tabs = { client: 'العميل', survey: 'المعاينة', equip: 'الأجهزة', quote: 'العرض' };
+    const tabs = { client: 'العميل', survey: 'المعاينة', equip: 'الأجهزة', quote: 'عرض السعر' };
     app.innerHTML = `<header class="top"><a class="back" href="#/">‹ الطلبات</a><h1>${esc(j.client.name || 'طلب جديد')}</h1>
       <div class="sub">${STATUS[j.status]}${j.quoteNo ? ' · عرض ' + esc(j.quoteNo) : ''}</div></header>
       <div class="tabs">${Object.entries(tabs).map(([k, v]) => `<a href="#/job/${id}/${k}" class="${k === tab ? 'on' : ''}">${v}</a>`).join('')}</div>
@@ -112,36 +112,37 @@
   }
 
   function clientTab(j, pane) {
+    const oldSrc = { 'تليفون': 'اتصال هاتفي', 'معارف': 'ترشيح' }; if (oldSrc[j.client.source]) j.client.source = oldSrc[j.client.source];
     pane.innerHTML = `<div class="card"><div class="row" style="margin-bottom:6px"><h3 class="grow" style="margin:0">بيانات العميل</h3>
-      <button class="btn sm alt" id="pickc">📇 من جهات الاتصال</button></div>
+      <button class="btn sm alt" id="pickc">استيراد من جهات الاتصال</button></div>
       <div class="grid2"><div><label>اللقب</label><select data-k="client.title">${['الأستاذ', 'المهندس', 'الدكتور', 'الأستاذة', 'المهندسة', 'الدكتورة', 'السيد', 'السيدة'].map(t => `<option>${t}</option>`).join('')}</select></div>
       <div><label>الاسم</label><input data-k="client.name" placeholder="اسم العميل"></div></div>
-      <label>التليفون</label><input data-k="client.phone" type="tel" inputmode="tel" placeholder="01xxxxxxxxx" dir="ltr">
+      <label>رقم الهاتف</label><input data-k="client.phone" type="tel" inputmode="tel" placeholder="01xxxxxxxxx" dir="ltr">
       <label>العنوان</label><input data-k="client.address" placeholder="المنطقة، الشارع، رقم العمارة">
-      <label>اللوكيشن</label><div class="row"><input class="grow" data-k="client.mapUrl" placeholder="رابط خرائط جوجل" dir="ltr"><button class="btn sm alt" id="geo">موقعي الحالي</button></div>
-      ${j.client.mapUrl ? `<a href="${esc(j.client.mapUrl)}" target="_blank" rel="noopener" class="muted" data-ext>فتح على الخريطة</a>` : ''}
+      <label>الموقع على الخريطة</label><div class="row"><input class="grow" data-k="client.mapUrl" placeholder="رابط خرائط جوجل" dir="ltr"><button class="btn sm alt" id="geo">تحديد الموقع الحالي</button></div>
+      ${j.client.mapUrl ? `<a href="${esc(j.client.mapUrl)}" target="_blank" rel="noopener" class="muted" data-ext>عرض على الخريطة</a>` : ''}
       <div class="grid2"><div><label>المصدر</label><select data-k="client.source">${SOURCES.map(s => `<option>${s}</option>`).join('')}</select></div>
-      <div><label>مين رشحه</label><input data-k="client.referrer"></div></div>
-      <label>ملاحظات (ليك بس)</label><textarea data-k="client.notes"></textarea></div>
+      <div><label>جهة الترشيح</label><input data-k="client.referrer"></div></div>
+      <label>ملاحظات داخلية</label><textarea data-k="client.notes"></textarea></div>
       <div class="card"><h3>حالة الطلب</h3><select id="st">${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${j.status === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
       <div class="muted" style="margin-top:8px">${j.history.map(h => `${STATUS[h.s]}: ${new Date(h.t).toLocaleDateString('en-GB')}`).join(' ← ')}</div></div>
       <a class="btn block" href="#/job/${j.id}/survey">التالي: المعاينة ›</a>
-      <div style="text-align:center;margin-top:18px"><button class="btn ghost" id="del">مسح الطلب</button></div>`;
+      <div style="text-align:center;margin-top:18px"><button class="btn ghost" id="del">حذف الطلب</button></div>`;
     bind(pane, j, () => saveJob(j));
     $('#pickc').onclick = async () => {
       let r;
-      try { r = await Native.pickContact(); } catch (e) { toast('مقدرتش أفتح جهات الاتصال'); return; }
-      if (r === 'old-app') { alert('الخاصية دي محتاجة النسخة الجديدة من التطبيق. نزّلها من نفس اللينك وثبّتها فوق القديمة — بياناتك مش هتتمسح.'); return; }
-      if (r === 'unsupported') { toast('جهات الاتصال مش متاحة هنا'); return; }
+      try { r = await Native.pickContact(); } catch (e) { toast('تعذّر فتح جهات الاتصال'); return; }
+      if (r === 'old-app') { alert('هذه الخاصية تتطلب تحديث التطبيق. يُرجى تنزيل الإصدار الأحدث وتثبيته فوق الإصدار الحالي، وستبقى جميع البيانات محفوظة.'); return; }
+      if (r === 'unsupported') { toast('جهات الاتصال غير متاحة على هذا الجهاز'); return; }
       if (!r) return;
-      fillFromContact(j, r); saveJob(j); clientTab(j, pane); toast('اتملت من جهات الاتصال');
+      fillFromContact(j, r); saveJob(j); clientTab(j, pane); toast('تم استيراد بيانات العميل');
     };
-    $('#st').onchange = e => { setStatus(j, e.target.value); saveJob(j); toast('الحالة اتغيرت'); };
+    $('#st').onchange = e => { setStatus(j, e.target.value); saveJob(j); toast('تم تحديث الحالة'); };
     $('#geo').onclick = () => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => {
-      j.client.mapUrl = `https://maps.google.com/?q=${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`; saveJob(j); clientTab(j, pane); toast('الموقع اتسجل');
-    }, () => toast('مقدرتش أجيب الموقع')) : toast('الموقع مش متاح');
+      j.client.mapUrl = `https://maps.google.com/?q=${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`; saveJob(j); clientTab(j, pane); toast('تم تسجيل الموقع');
+    }, () => toast('تعذّر تحديد الموقع')) : toast('خدمة تحديد الموقع غير متاحة');
     $('#del').onclick = async () => {
-      if (!confirm('متأكد إنك عايز تمسح الطلب ده وكل صوره؟')) return;
+      if (!confirm('هل تريد حذف هذا الطلب وجميع صوره نهائيًا؟')) return;
       for (const l of j.locations) for (const pid of l.photos || []) await Store.delPhoto(pid);
       await Store.delJob(j.id); location.hash = '#/';
     };
@@ -156,18 +157,18 @@
     if (name) c.name = name;
     if (r.phone) { let p = r.phone.replace(/[^\d+]/g, ''); if (p.startsWith('+20')) p = '0' + p.slice(3); else if (p.startsWith('0020')) p = '0' + p.slice(4); c.phone = p; }
     if (r.address && !c.address) c.address = r.address.replace(/\s*\n\s*/g, '، ');
-    const extra = [r.company && 'الشركة: ' + r.company, r.email && 'الإيميل: ' + r.email, r.note && 'ملاحظة من جهات الاتصال: ' + r.note].filter(Boolean);
+    const extra = [r.company && 'الشركة: ' + r.company, r.email && 'البريد الإلكتروني: ' + r.email, r.note && 'ملاحظة من جهات الاتصال: ' + r.note].filter(Boolean);
     if (extra.length) { const add = extra.filter(x => !(c.notes || '').includes(x)); if (add.length) c.notes = [c.notes, ...add].filter(Boolean).join('\n'); }
   }
 
-  const opts = (cat, sel, filter) => `<option value="">— اختار —</option>` + catalog.filter(c => c.cat === cat && (!filter || filter(c)))
+  const opts = (cat, sel, filter) => `<option value="">— اختر —</option>` + catalog.filter(c => c.cat === cat && (!filter || filter(c)))
     .map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc((c.brand && c.brand !== '—' ? c.brand + ' ' : '') + c.name)} — ${fmt(c.cost)}${c.date ? ' (' + esc(c.date) + ')' : ''}</option>`).join('');
 
   async function surveyTab(j, pane) {
     if (j.status === 'new') { setStatus(j, 'survey'); saveJob(j); }
     const q = Calc.buildQuote(j, catalog, settings);
     pane.innerHTML = `<div class="card"><div class="row"><span class="grow"><b>${j.locations.length}</b> مكان</span>
-      <span class="muted">كابل ${fmt(q.cable.measured)} م ← ${fmt(q.cable.withReserve)} م بالاحتياطي · ${q.cable.boxes} كرتونة</span></div></div>
+      <span class="muted">الكابل: ${fmt(q.cable.measured)} م · ${fmt(q.cable.withReserve)} م شاملة الاحتياطي · ${q.cable.boxes} كرتونة</span></div></div>
       <div id="locs"></div>
       <div class="row"><button class="btn grow" id="addNew">+ كاميرا جديدة</button><button class="btn alt grow" id="addRel">+ نقل كاميرا قائمة</button></div>
       <a class="btn block alt" style="margin-top:12px" href="#/job/${j.id}/equip">التالي: الأجهزة ›</a>`;
@@ -183,15 +184,15 @@
         <label>الحامل</label><select data-k="mountId">${opts('mount', l.mountId)}</select>` : ''}
         <div class="grid2"><div><label>طول الكابل (متر)</label><input type="number" inputmode="decimal" data-k="cableM" dir="ltr"></div>
         <div><label>الارتفاع (متر)</label><input type="number" inputmode="decimal" data-k="height" dir="ltr"></div></div>
-        <label><input type="checkbox" data-k="ladder">محتاج سلم / سقالة</label>
+        <label><input type="checkbox" data-k="ladder">يتطلب سلمًا أو سقالة</label>
         <div class="grid2"><div><label>طريقة التركيب</label><input data-k="mounting" placeholder="حائط، سقف، عمود..."></div>
-        <div><label>مصنعية استثنائية</label><input type="number" data-k="laborOverride" placeholder="${l.kind === 'relocate' ? settings.laborRelocate : settings.laborNew}" dir="ltr"></div></div>
+        <div><label>مصنعية خاصة</label><input type="number" data-k="laborOverride" placeholder="${l.kind === 'relocate' ? settings.laborRelocate : settings.laborNew}" dir="ltr"></div></div>
         <label>ملاحظات</label><input data-k="notes">
         <div class="photos"></div>`;
       box.appendChild(c);
       bind(c, l, el => { saveJob(j); if (['kind', 'place'].includes(el.dataset.k)) surveyTab(j, pane); });
       c.querySelector('[data-act=rm]').onclick = async () => {
-        if (!confirm('تمسح المكان ده؟')) return;
+        if (!confirm('هل تريد حذف هذه النقطة؟')) return;
         for (const pid of l.photos || []) await Store.delPhoto(pid);
         j.locations.splice(i, 1); saveJob(j); surveyTab(j, pane);
       };
@@ -236,29 +237,29 @@
   function equipTab(j, pane) {
     j.equip = j.equip || { extras: [] }; j.equip.extras = j.equip.extras || []; j.extraLabor = j.extraLabor || []; j.opts = j.opts || {};
     const cams = j.locations.map(l => item(l.camId)).filter(Boolean);
-    const hddOpts = `<option value="">— من غير هارد —</option>` + catalog.filter(c => c.cat === 'hdd').map(c => {
+    const hddOpts = `<option value="">— بدون وحدة تخزين —</option>` + catalog.filter(c => c.cat === 'hdd').map(c => {
       const d = Calc.hddDays(c.specs.tb, cams.length ? cams : j.locations.map(() => ({ specs: { res: 4 } })));
-      return `<option value="${c.id}" ${c.id === j.equip.hddId ? 'selected' : ''}>${esc(c.name)} — ${fmt(c.cost)} · حوالي ${d} يوم تسجيل</option>`; }).join('');
+      return `<option value="${c.id}" ${c.id === j.equip.hddId ? 'selected' : ''}>${esc(c.name)} — ${fmt(c.cost)} · تسجيل لمدة ${d} يوم تقريبًا</option>`; }).join('');
     const hasHdd = catalog.some(c => c.cat === 'hdd'), hasNvr = catalog.some(c => c.cat === 'nvr');
     pane.innerHTML = `<div class="card"><h3>الأجهزة الأساسية</h3>
       <label>جهاز التسجيل</label><select data-k="equip.nvrId">${opts('nvr', j.equip.nvrId)}</select>
-      ${!hasNvr ? '<div class="muted">لسه مفيش أجهزة تسجيل في الأسعار.</div>' : ''}
+      ${!hasNvr ? '<div class="muted">لا توجد أجهزة تسجيل في قائمة الأسعار.</div>' : ''}
       <label>السويتش</label><select data-k="equip.switchId">${opts('switch', j.equip.switchId)}</select>
-      <label>الهارد (الأيام تقريبية لتسجيل متواصل)</label><select data-k="equip.hddId">${hddOpts}</select>
-      ${!hasHdd ? '<div class="muted">لسه مفيش هاردات في الأسعار.</div>' : ''}</div>
+      <label>وحدة التخزين (المدة تقديرية لتسجيل متواصل)</label><select data-k="equip.hddId">${hddOpts}</select>
+      ${!hasHdd ? '<div class="muted">لا توجد وحدات تخزين في قائمة الأسعار.</div>' : ''}</div>
       <div class="card"><h3>بنود إضافية</h3><div id="extras"></div><button class="btn sm alt" id="addX">+ بند من الأسعار</button></div>
-      <div class="card"><h3>مصنعية إضافية</h3><div class="muted">زي برمجة الجهاز، تركيب راك...</div><div id="xlab"></div><button class="btn sm alt" id="addL">+ بند مصنعية</button></div>
-      <div class="card"><h3>إعدادات العرض ده</h3>
+      <div class="card"><h3>مصنعية إضافية</h3><div class="muted">مثل برمجة جهاز التسجيل وتركيب الراك</div><div id="xlab"></div><button class="btn sm alt" id="addL">+ بند مصنعية</button></div>
+      <div class="card"><h3>إعدادات هذا العرض</h3>
       <div class="grid2"><div><label>نسبة الربح %</label><input type="number" data-k="opts.markup" placeholder="${settings.markup}" dir="ltr"></div>
       <div><label>احتياطي الكابل %</label><input type="number" data-k="opts.cableReserve" placeholder="${settings.cableReserve}" dir="ltr"></div></div>
       <label>نوع الكابل</label><select data-k="opts.cableId">${catalog.filter(c => c.cat === 'cable' && c.specs && (c.specs.perMeter || c.specs.boxM)).map(c =>
         `<option value="${c.id}" ${c.id === (j.opts.cableId || (catalog.find(x => x.cat === 'cable' && x.specs && x.specs.default) || {}).id) ? 'selected' : ''}>${esc(c.name)} — ${fmt(Math.round((c.specs.perMeter ? c.cost : c.cost / c.specs.boxM) * 10) / 10)} للمتر</option>`).join('')}</select>
-      <label>احتياطي زيادة على الإجمالي (متر)</label><input type="number" data-k="opts.extraReserveM" placeholder="0" dir="ltr">
-      <label><input type="checkbox" data-k="opts.cableLump">اكتب الكابلات والخراطيم مقطوعية</label>
+      <label>احتياطي إضافي على الإجمالي (متر)</label><input type="number" data-k="opts.extraReserveM" placeholder="0" dir="ltr">
+      <label><input type="checkbox" data-k="opts.cableLump">احتساب الكابلات والخراطيم مقطوعية</label>
       <div id="lump" style="${j.opts.cableLump ? '' : 'display:none'}"><div class="grid2"><div><label>سعر المقطوعية للعميل</label><input type="number" data-k="opts.lumpPrice" dir="ltr"></div>
-      <div><label>تكلفتها عليك</label><input type="number" data-k="opts.lumpCost" dir="ltr"></div></div></div>
-      <label><input type="checkbox" data-k="opts.showPhotos">اعرض صور المواقع في عرض العميل</label></div>
-      <a class="btn block orange" href="#/job/${j.id}/quote">شوف العرض ›</a>`;
+      <div><label>التكلفة الفعلية</label><input type="number" data-k="opts.lumpCost" dir="ltr"></div></div></div>
+      <label><input type="checkbox" data-k="opts.showPhotos">إرفاق صور المواقع بعرض العميل</label></div>
+      <a class="btn block orange" href="#/job/${j.id}/quote">معاينة عرض السعر ›</a>`;
     bind(pane, j, el => { saveJob(j); if (el.dataset.k === 'opts.cableLump') $('#lump').style.display = el.checked ? '' : 'none'; });
     const xs = $('#extras');
     j.equip.extras.forEach((x, i) => {
@@ -303,48 +304,48 @@
 
   function quoteTab(j, pane) {
     const q = Calc.buildQuote(j, catalog, settings);
-    const msg = `أهلاً ${j.client.title || ''} ${j.client.name || ''}، مرفق عرض السعر رقم ${j.quoteNo || ''} لتوريد وتركيب الكاميرات. العرض ساري لمدة ${settings.validityDays} يوم. تحت أمرك في أي استفسار.\nمحمد جمعة — Type-G Smart`;
-    pane.innerHTML = `${q.warnings.length ? q.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('') : (q.lines.length ? '<div class="okbox">✓ مفيش تعارض في الأجهزة</div>' : '')}
+    const msg = `تحية طيبة ${j.client.title || ''} ${j.client.name || ''}،\nمرفق عرض السعر رقم ${j.quoteNo || ''} الخاص بتوريد وتركيب نظام كاميرات المراقبة، والعرض ساري لمدة ${settings.validityDays} يومًا من تاريخه.\nيسعدنا الرد على أي استفسار.\nمحمد جمعة — Type-G Smart`;
+    pane.innerHTML = `${q.warnings.length ? q.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('') : (q.lines.length ? '<div class="okbox">✓ لا توجد تعارضات بين الأجهزة</div>' : '')}
       <div class="card">${q.lines.length ? `<table class="q"><tr><th>البيان</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>
         ${q.lines.map(l => `<tr><td>${esc(l.name)}</td><td class="n">${fmt(l.qty)} ${l.unit === 'متر' ? 'م' : ''}</td><td class="n">${fmt(l.sell)}</td><td class="n">${fmt(l.qty * l.sell)}</td></tr>`).join('')}</table>
         <div class="tot"><span>الإجمالي</span><span>${fmt(q.total)} ج</span></div>
-        <div class="muted">المقدم ${settings.depositPct}% عند التوريد: ${fmt(q.deposit)} · بعد التسليم: ${fmt(q.rest)}</div>` : '<div class="empty">لسه مفيش بنود. ابدأ من المعاينة.</div>'}</div>
-      ${q.lines.length ? `<div class="card" style="background:#f8fafc"><h3>ليك بس</h3><div class="row muted"><span class="grow">التكلفة: ${fmt(q.costTotal)}</span><span class="grow">ربح المواد: ${fmt(q.matProfit)}</span><span>المصنعية: ${fmt(q.laborTotal)}</span></div></div>
-      <button class="btn block orange" id="send">ابعت العرض للعميل (PDF)</button>
-      <div class="row" style="margin-top:8px"><button class="btn alt grow" id="prev">شوف PDF العميل</button><button class="btn alt grow" id="intl">النسخة الداخلية</button></div>
-      <div class="row" style="margin-top:8px"><button class="btn alt grow" id="wa">افتح محادثة العميل</button><button class="btn alt grow" id="bom">قائمة الخامات</button></div>
-      <div class="card" style="margin-top:12px"><h3>رد العميل</h3><div class="row"><button class="btn sm alt grow" data-st="followup">رد / محتاج متابعة</button>
-      <button class="btn sm ok grow" data-st="won">وافق</button><button class="btn sm bad grow" data-st="lost">رفض</button></div></div>` : ''}`;
+        <div class="muted">المقدم ${settings.depositPct}% عند التوريد: ${fmt(q.deposit)} · بعد التسليم: ${fmt(q.rest)}</div>` : '<div class="empty">لا توجد بنود بعد. ابدأ بإدخال بيانات المعاينة.</div>'}</div>
+      ${q.lines.length ? `<div class="card" style="background:#f8fafc"><h3>بيانات داخلية</h3><div class="row muted"><span class="grow">التكلفة: ${fmt(q.costTotal)}</span><span class="grow">ربح المواد: ${fmt(q.matProfit)}</span><span>المصنعية: ${fmt(q.laborTotal)}</span></div></div>
+      <button class="btn block orange" id="send">إرسال العرض للعميل (PDF)</button>
+      <div class="row" style="margin-top:8px"><button class="btn alt grow" id="prev">معاينة ملف العرض</button><button class="btn alt grow" id="intl">النسخة الداخلية</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn alt grow" id="wa">مراسلة العميل</button><button class="btn alt grow" id="bom">قائمة الخامات</button></div>
+      <div class="card" style="margin-top:12px"><h3>رد العميل</h3><div class="row"><button class="btn sm alt grow" data-st="followup">تم الرد – متابعة</button>
+      <button class="btn sm ok grow" data-st="won">تمت الموافقة</button><button class="btn sm bad grow" data-st="lost">مرفوض</button></div></div>` : ''}`;
     if (!q.lines.length) return;
     const busy = (b, on) => { b.disabled = on; b.style.opacity = on ? .6 : 1; };
     $('#send').onclick = async e => {
       busy(e.target, true);
       try { ensureQuoteNo(j); const blob = await QuotePDF.client(j, q, settings, await photosFor(j));
         const ok = await shareOrDownload(blob, `عرض سعر ${j.quoteNo} - ${j.client.name || ''}.pdf`, msg.replace('رقم  ', `رقم ${j.quoteNo} `));
-        if (ok) { setStatus(j, 'sent'); saveJob(j); toast('اتسجل إن العرض اتبعت'); jobView(j.id, 'quote'); }
-      } catch (err) { toast('حصلت مشكلة في عمل الملف'); console.error(err); } finally { busy(e.target, false); }
+        if (ok) { setStatus(j, 'sent'); saveJob(j); toast('تم تسجيل إرسال العرض'); jobView(j.id, 'quote'); }
+      } catch (err) { toast('تعذّر إنشاء الملف'); console.error(err); } finally { busy(e.target, false); }
     };
     $('#prev').onclick = async e => { busy(e.target, true); try { ensureQuoteNo(j); saveJob(j);
       const blob = await QuotePDF.client(j, q, settings, await photosFor(j)); if (Native.isNative) await Native.shareFile(blob, `معاينة ${j.quoteNo}.pdf`); else window.open(URL.createObjectURL(blob)); } finally { busy(e.target, false); } };
     $('#intl').onclick = async e => { busy(e.target, true); try { ensureQuoteNo(j); saveJob(j);
       const blob = await QuotePDF.internal(j, q, settings); await shareOrDownload(blob, `داخلي ${j.quoteNo}.pdf`); } finally { busy(e.target, false); } };
-    $('#wa').onclick = () => { if (!j.client.phone) return toast('مفيش رقم تليفون للعميل'); Native.openUrl(`https://wa.me/${waNumber(j.client.phone)}?text=${encodeURIComponent(msg)}`); };
+    $('#wa').onclick = () => { if (!j.client.phone) return toast('لا يوجد رقم هاتف للعميل'); Native.openUrl(`https://wa.me/${waNumber(j.client.phone)}?text=${encodeURIComponent(msg)}`); };
     $('#bom').onclick = () => {
       const lines = q.lines.filter(l => l.kind === 'mat').map(l => `• ${l.name}: ${l.qty} ${l.unit}`).join('\n');
       const locs = j.locations.map((l, i) => `${i + 1}. ${l.name || '-'} — ${l.kind === 'relocate' ? 'نقل' : (item(l.camId)?.name || '')}${l.height ? ' · ارتفاع ' + l.height + 'م' : ''}${l.ladder ? ' · سلم' : ''}${l.mounting ? ' · ' + l.mounting : ''}`).join('\n');
       const txt = `قائمة خامات — ${j.client.name}\n${j.client.address || ''}\n\n${lines}\n\nكابل: ${q.cable.withReserve} م (${q.cable.boxes} كرتونة)\n\nالأماكن:\n${locs}`;
-      if (Native.isNative) Native.shareText(txt); else if (navigator.share) navigator.share({ text: txt }).catch(() => {}); else navigator.clipboard.writeText(txt).then(() => toast('اتنسخت'));
+      if (Native.isNative) Native.shareText(txt); else if (navigator.share) navigator.share({ text: txt }).catch(() => {}); else navigator.clipboard.writeText(txt).then(() => toast('تم النسخ'));
     };
     pane.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
-      if (b.dataset.st === 'followup') { const d = prompt('تتابع معاه بعد كام يوم؟ (0 = من غير تذكير)', '2'); if (d === null) return; j.followAt = Number(d) > 0 ? Date.now() + Number(d) * DAY : null; }
-      setStatus(j, b.dataset.st); saveJob(j); toast('اتسجل'); jobView(j.id, 'quote');
+      if (b.dataset.st === 'followup') { const d = prompt('موعد المتابعة التالية بعد كم يوم؟ (أدخل 0 لإلغاء التذكير)', '2'); if (d === null) return; j.followAt = Number(d) > 0 ? Date.now() + Number(d) * DAY : null; }
+      setStatus(j, b.dataset.st); saveJob(j); toast('تم الحفظ'); jobView(j.id, 'quote');
     });
   }
 
   // ---------- prices ----------
   function pricesView() {
-    app.innerHTML = `<header class="top"><h1><span class="dot"></span>الأسعار</h1><div class="sub">أسعار التكلفة بالجنيه — العرض بيضيف عليها نسبة الربح</div></header><main>
-      <input id="q" placeholder="دوّر على صنف..." style="margin-bottom:12px">
+    app.innerHTML = `<header class="top"><h1><span class="dot"></span>الأسعار</h1><div class="sub">أسعار التكلفة بالجنيه المصري، وتُضاف نسبة الربح عند إعداد العرض</div></header><main>
+      <input id="q" placeholder="بحث عن صنف..." style="margin-bottom:12px">
       <div id="cats"></div>
       <div class="card"><h3>إضافة صنف</h3>
       <div class="grid2"><div><label>القسم</label><select id="nc">${Object.entries(CATS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
@@ -364,28 +365,28 @@
           ${SPEC_FIELDS[c.cat] ? `<div class="muted">${SPEC_FIELDS[c.cat].map(([s, l]) => c.specs[s] != null && c.specs[s] !== '' ? `${l}: ${c.specs[s]}` : '').filter(Boolean).join(' · ')}</div>` : ''}
           <div class="muted" style="font-size:12px">${esc(c.src || '')}${c.date ? ' · ' + esc(c.date) : ''}</div></div>
           <input type="number" value="${c.cost}" data-f="cost"><button class="btn ghost" data-f="del">✕</button></div>`).join('')}</div>`;
-      }).join('') || '<div class="empty">مفيش نتايج</div>';
+      }).join('') || '<div class="empty">لا توجد نتائج</div>';
       app.querySelectorAll('.pricerow').forEach(r => {
         const c = item(r.dataset.id);
-        r.querySelector('[data-f=cost]').onchange = e => { c.cost = Number(e.target.value) || 0; c.updated = Date.now(); c.date = new Date().toISOString().slice(0, 10); saveCatalog(); toast('السعر اتحدث'); };
-        r.querySelector('[data-f=del]').onclick = () => { if (!confirm(`تمسح "${c.name}"؟`)) return; catalog = catalog.filter(x => x !== c); saveCatalog(); draw($('#q').value); };
+        r.querySelector('[data-f=cost]').onchange = e => { c.cost = Number(e.target.value) || 0; c.updated = Date.now(); c.date = new Date().toISOString().slice(0, 10); saveCatalog(); toast('تم تحديث السعر'); };
+        r.querySelector('[data-f=del]').onclick = () => { if (!confirm(`هل تريد حذف "${c.name}"؟`)) return; catalog = catalog.filter(x => x !== c); saveCatalog(); draw($('#q').value); };
       });
     };
     draw('');
     $('#q').oninput = e => draw(e.target.value);
     const specUI = () => { const k = $('#nc').value; $('#nspec').innerHTML = (SPEC_FIELDS[k] || []).map(([s, l]) => `<label>${l}</label><input type="number" data-s="${s}" dir="ltr">`).join('')
-      + (k === 'cam' ? `<label>المكان</label><select data-s="place"><option value="">الاتنين</option><option value="out">خارجي</option><option value="in">داخلي</option></select>` : '');
+      + (k === 'cam' ? `<label>المكان</label><select data-s="place"><option value="">داخلي وخارجي</option><option value="out">خارجي</option><option value="in">داخلي</option></select>` : '');
       $('#npmL').style.display = ['cable', 'acc', 'other'].includes(k) ? '' : 'none'; };
     $('#nc').onchange = specUI; specUI();
     $('#nadd').onclick = () => {
       const name = $('#nn').value.trim(), cost = Number($('#np').value);
-      if (!name || !cost) return toast('اكتب الاسم والسعر');
+      if (!name || !cost) return toast('يُرجى إدخال الاسم والسعر');
       const specs = {}; $('#nspec').querySelectorAll('[data-s]').forEach(el => { if (el.value !== '') specs[el.dataset.s] = el.tagName === 'SELECT' ? el.value : Number(el.value); });
       if ($('#npm').checked) specs.perMeter = true;
-      else if ($('#nc').value === 'cable') specs.boxM = Number(prompt('السعر ده لكرتونة طولها كام متر؟', '305')) || 305;
+      else if ($('#nc').value === 'cable') specs.boxM = Number(prompt('طول الكرتونة بالمتر؟', '305')) || 305;
       catalog.push({ local: true, id: uid(), cat: $('#nc').value, brand: $('#nb').value.trim() || '—', name, cost, specs, updated: Date.now(),
         src: $('#nsrc').value.trim(), date: $('#ndt').value || new Date().toISOString().slice(0, 10), summary: $('#nsum').value.trim() });
-      saveCatalog(); toast('اتضاف'); pricesView();
+      saveCatalog(); toast('تمت الإضافة'); pricesView();
     };
   }
 
@@ -400,21 +401,21 @@
       <div><label>المقدم عند التوريد %</label><input type="number" data-k="depositPct" dir="ltr"></div>
       <div><label>صلاحية العرض (يوم)</label><input type="number" data-k="validityDays" dir="ltr"></div>
       <div><label>تذكير المتابعة بعد (يوم)</label><input type="number" data-k="followupDays" dir="ltr"></div>
-      <div><label>رقم العرض الجاي</label><input type="number" data-k="nextQuoteNo" dir="ltr"></div></div>
+      <div><label>رقم العرض التالي</label><input type="number" data-k="nextQuoteNo" dir="ltr"></div></div>
       <label>اسم التوقيع</label><input data-k="signName"></div>
-      <div class="card"><h3>النسخة الاحتياطي</h3>
-      <div class="muted">ملف واحد مشفّر فيه كل حاجة (العملاء، المعاينات، الصور، الأسعار). من غير الرقم السري محدش يقدر يفتحه — ولا حتى انت لو نسيته.</div>
-      <label>الرقم السري للتشفير</label><input type="password" id="pw" placeholder="${settings._pwSet ? 'محفوظ — اكتب جديد لو عايز تغيره' : 'اختار رقم سري قوي'}">
-      <button class="btn block" id="bk" style="margin-top:10px">عمل نسخة احتياطي</button>
-      <label class="btn block alt" style="margin-top:8px">استرجاع من نسخة<input type="file" id="rs" hidden accept=".tgbak,application/json,*/*"></label>
-      <div class="muted" id="lastbk" style="margin-top:8px">${settings.lastBackup ? 'آخر نسخة: ' + new Date(settings.lastBackup).toLocaleString('en-GB') : 'لسه معملتش نسخة'}</div></div>
-      <div class="muted" style="text-align:center">إصدار 0.1 — تجريبي</div></main>`;
+      <div class="card"><h3>النسخ الاحتياطي</h3>
+      <div class="muted">ملف واحد مشفّر يضم جميع البيانات (العملاء، المعاينات، الصور، الأسعار). لا يمكن فتحه بدون الرقم السري، ولا يمكن استعادته في حال نسيانه.</div>
+      <label>الرقم السري للتشفير</label><input type="password" id="pw" placeholder="${settings._pwSet ? 'محفوظ — أدخل رقمًا جديدًا لتغييره' : 'اختر رقمًا سريًا قويًا'}">
+      <button class="btn block" id="bk" style="margin-top:10px">إنشاء نسخة احتياطية</button>
+      <label class="btn block alt" style="margin-top:8px">استعادة من نسخة احتياطية<input type="file" id="rs" hidden accept=".tgbak,application/json,*/*"></label>
+      <div class="muted" id="lastbk" style="margin-top:8px">${settings.lastBackup ? 'آخر نسخة احتياطية: ' + new Date(settings.lastBackup).toLocaleString('en-GB') : 'لم يتم إنشاء نسخة احتياطية بعد'}</div></div>
+      <div class="muted" style="text-align:center">الإصدار 1.0</div></main>`;
     bind(app, settings, () => saveSettings());
     const getPw = async () => {
       const typed = $('#pw').value;
-      if (typed) { if (typed.length < 6) { toast('الرقم السري لازم 6 حروف على الأقل'); return null; }
+      if (typed) { if (typed.length < 6) { toast('يجب ألا يقل الرقم السري عن 6 أحرف'); return null; }
         await Store.set('pw', typed); settings._pwSet = true; saveSettings(); return typed; }
-      const saved = await Store.get('pw'); if (!saved) toast('اكتب رقم سري الأول'); return saved;
+      const saved = await Store.get('pw'); if (!saved) toast('يُرجى إدخال الرقم السري أولًا'); return saved;
     };
     $('#bk').onclick = async e => {
       const pw = await getPw(); if (!pw) return;
@@ -427,17 +428,17 @@
         if (Native.isNative) await Native.shareFile(blob, name);
         else if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] }).catch(() => {});
         else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); }
-        settings.lastBackup = Date.now(); saveSettings(); toast(`النسخة جاهزة (${(blob.size / 1048576).toFixed(1)} ميجا)`); settingsView();
+        settings.lastBackup = Date.now(); saveSettings(); toast(`تم إنشاء النسخة (${(blob.size / 1048576).toFixed(1)} ميجا)`); settingsView();
       } finally { e.target.disabled = false; }
     };
     $('#rs').onchange = async e => {
       const f = e.target.files[0]; if (!f) return;
-      const pw = prompt('اكتب الرقم السري بتاع النسخة'); if (!pw) return;
+      const pw = prompt('أدخل الرقم السري للنسخة الاحتياطية'); if (!pw) return;
       try {
         const data = await AppCrypto.decrypt(await f.text(), pw);
-        if (!confirm(`النسخة دي من ${new Date(data.exportedAt).toLocaleString('en-GB')} وفيها ${data.jobs.length} طلب. الاسترجاع هيمسح البيانات الحالية ويحط النسخة مكانها. تكمل؟`)) return;
+        if (!confirm(`هذه النسخة بتاريخ ${new Date(data.exportedAt).toLocaleString('en-GB')} وتحتوي على ${data.jobs.length} طلب، وستحل محل جميع البيانات الحالية. هل تريد المتابعة؟`)) return;
         await Backup.importAll(data); await Store.set('pw', pw);
-        settings = Object.assign({}, SEED.settings, data.settings); catalog = data.catalog; toast('اتسترجعت'); location.hash = '#/';
+        settings = Object.assign({}, SEED.settings, data.settings); catalog = data.catalog; toast('تمت الاستعادة'); location.hash = '#/';
       } catch (err) { alert(err.message); }
     };
   }
@@ -451,11 +452,11 @@
   function unlockScreen(wrong) {
     return new Promise(res => {
       app.innerHTML = `<header class="top"><h1><span class="dot"></span>Type-G Smart</h1><div class="sub">فتح قائمة الأسعار</div></header><main>
-        <div class="card"><h3>اكتب الرقم السري</h3><div class="muted">الأسعار متشفرة. هتكتب الرقم ده مرة واحدة بس، والتطبيق هيفتكره.</div>
-        ${wrong ? '<div class="warn" style="margin-top:10px">الرقم السري غلط، جرّب تاني.</div>' : ''}
+        <div class="card"><h3>أدخل الرقم السري</h3><div class="muted">قائمة الأسعار مشفّرة، ويُطلب الرقم السري مرة واحدة فقط على هذا الجهاز.</div>
+        ${wrong ? '<div class="warn" style="margin-top:10px">الرقم السري غير صحيح، يُرجى المحاولة مرة أخرى.</div>' : ''}
         <label for="upw">الرقم السري</label><input id="upw" type="password" autocomplete="current-password" dir="ltr">
         <button class="btn block" id="ugo" style="margin-top:12px">فتح</button>
-        <button class="btn block alt" id="uskip" style="margin-top:8px">بعدين</button></div></main>`;
+        <button class="btn block alt" id="uskip" style="margin-top:8px">لاحقًا</button></div></main>`;
       $('#ugo').onclick = () => res($('#upw').value || null);
       $('#upw').onkeydown = e => { if (e.key === 'Enter') res($('#upw').value || null); };
       $('#uskip').onclick = () => res(null);
@@ -482,7 +483,7 @@
     const jobs = await Store.jobs();
     Native.scheduleFollowups(jobs.filter(j => (j.status === 'sent' && j.sentAt) || (j.status === 'followup' && j.followAt)).map(j => ({
       at: j.status === 'sent' ? j.sentAt + settings.followupDays * DAY : j.followAt,
-      text: `${j.client.name || 'عميل'} — ${j.status === 'sent' ? 'العرض اتبعت من ' + settings.followupDays + ' يوم ومفيش رد' : 'ميعاد المتابعة'}` })));
+      text: `${j.client.name || 'عميل'} — ${j.status === 'sent' ? 'مرّ ' + settings.followupDays + ' يوم على إرسال العرض دون رد' : 'حان موعد المتابعة'}` })));
   }
   window.addEventListener('hashchange', () => { clearTimeout(window._rr); window._rr = setTimeout(refreshReminders, 1500); });
   document.addEventListener('click', e => { const l = e.target.closest('a[data-ext]'); if (l && Native.isNative) { e.preventDefault(); Native.openUrl(l.href); } });
@@ -490,6 +491,6 @@
   const hadPrices = catalog.length > 0;
   const ps = await syncPrices(true);
   route(); refreshReminders();
-  if (ps === 'updated') toast(hadPrices ? 'الأسعار اتحدثت' : 'الأسعار اتفتحت');
-  else if (ps === 'offline' && !hadPrices) toast('مفيش نت — الأسعار هتتحمل أول ما النت يرجع');
+  if (ps === 'updated') toast(hadPrices ? 'تم تحديث الأسعار' : 'تم فتح قائمة الأسعار');
+  else if (ps === 'offline' && !hadPrices) toast('لا يوجد اتصال بالإنترنت. سيتم تحميل الأسعار عند عودة الاتصال.');
 })();
